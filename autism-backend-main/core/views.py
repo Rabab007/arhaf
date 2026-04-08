@@ -20,27 +20,10 @@ except ImportError:
     predict_asd = None
 
 # 1. تسجيل مستخدم جديد
-import traceback
-from rest_framework.response import Response
-from rest_framework import status, generics
-from rest_framework.permissions import AllowAny
-
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
-
-    def create(self, request, *args, **kwargs):
-        try:
-            return super().create(request, *args, **kwargs)
-        except Exception as e:
-            return Response(
-                {
-                    "detail": str(e),
-                    "trace": traceback.format_exc(),
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 # 2. عرض وإضافة الأطفال
 class ChildListCreateView(generics.ListCreateAPIView):
