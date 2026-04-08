@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import timedelta
 
 from dotenv import load_dotenv
-import dj_database_url
 
 # Load .env file (same folder as manage.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,6 +15,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+railway_public_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+if railway_public_domain:
+    ALLOWED_HOSTS.append(railway_public_domain)
 
 render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if render_hostname:
@@ -87,15 +90,33 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database
 # =========================
 # الأولوية:
-# 1) لو DATABASE_URL موجود -> استخدم Postgres/قاعدة الإنتاج
+# 1) لو Railway MySQL موجود -> استخدم MySQL
 # 2) لو USE_SQLITE=True -> استخدم SQLite محليًا
 # 3) غير كذا -> استخدم MySQL المحلي القديم
-database_url = os.getenv("DATABASE_URL")
+
 USE_SQLITE = os.getenv("USE_SQLITE", "True").lower() == "true"
 
-if database_url:
+railway_mysql_ready = all([
+    os.getenv("MYSQLDATABASE"),
+    os.getenv("MYSQLUSER"),
+    os.getenv("MYSQLPASSWORD"),
+    os.getenv("MYSQLHOST"),
+    os.getenv("MYSQLPORT"),
+])
+
+if railway_mysql_ready:
     DATABASES = {
-        "default": dj_database_url.parse(database_url, conn_max_age=600, ssl_require=False)
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.getenv("MYSQLDATABASE"),
+            "USER": os.getenv("MYSQLUSER"),
+            "PASSWORD": os.getenv("MYSQLPASSWORD"),
+            "HOST": os.getenv("MYSQLHOST"),
+            "PORT": os.getenv("MYSQLPORT"),
+            "OPTIONS": {
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
     }
 elif USE_SQLITE:
     DATABASES = {
@@ -196,7 +217,7 @@ if not DEBUG:
 # =========================
 # MariaDB / XAMPP compatibility fix
 # =========================
-if not database_url and not USE_SQLITE:
+if not railway_mysql_ready and not USE_SQLITE:
     from django.db.backends.base.base import BaseDatabaseWrapper
     from django.db.backends.mysql.features import DatabaseFeatures
 
