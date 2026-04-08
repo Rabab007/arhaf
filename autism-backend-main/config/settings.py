@@ -12,7 +12,7 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 # Core settings
 # =========================
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
-DEBUG =True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = ["*"]
 
